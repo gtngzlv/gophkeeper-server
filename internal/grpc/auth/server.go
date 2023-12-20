@@ -2,12 +2,15 @@ package auth
 
 import (
 	"context"
+	"errors"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	pb "github.com/gtngzlv/gophkeeper-protos/gen/go/gophkeeper"
+
+	customerr "github.com/gtngzlv/gophkeeper-server/internal/domain/errors"
 )
 
 type IAuthService interface {
@@ -35,6 +38,9 @@ func (s *serverAPI) Register(ctx context.Context, in *pb.RegisterRequest) (*pb.R
 
 	userID, err := s.authService.Register(ctx, in.GetEmail(), in.GetPassword())
 	if err != nil {
+		if errors.Is(err, customerr.ErrUserExists) {
+			return nil, status.Error(codes.AlreadyExists, "user with this email already exist")
+		}
 		return nil, status.Error(codes.Internal, "failed to register")
 	}
 
@@ -49,6 +55,9 @@ func (s *serverAPI) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginRe
 	}
 	token, err := s.authService.Login(ctx, in.GetEmail(), in.GetPassword())
 	if err != nil {
+		if errors.Is(err, customerr.ErrInvalidCredentials) {
+			return nil, status.Error(codes.InvalidArgument, "invalid credentials")
+		}
 		return nil, status.Error(codes.Internal, "failed to login")
 	}
 

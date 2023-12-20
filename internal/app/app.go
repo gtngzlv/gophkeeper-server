@@ -6,7 +6,7 @@ import (
 
 	grpcapp "github.com/gtngzlv/gophkeeper-server/internal/app/grpc"
 	"github.com/gtngzlv/gophkeeper-server/internal/config"
-	"github.com/gtngzlv/gophkeeper-server/internal/repository/sqlite"
+	"github.com/gtngzlv/gophkeeper-server/internal/repository"
 	authservice "github.com/gtngzlv/gophkeeper-server/internal/services/auth"
 	keeperservice "github.com/gtngzlv/gophkeeper-server/internal/services/keeper"
 )
@@ -22,18 +22,14 @@ func NewApp(
 	const op = "App.New"
 	log = log.With(slog.String("op", op))
 
-	repo, err := sqlite.New(cfg.StoragePath)
-	if err != nil {
-		log.Error("failed to init sqlite", err)
-		return nil, err
-	}
+	repo := repository.New(ctx, log, cfg)
 
-	authSrv := authservice.New(log, repo)
+	authSrv := authservice.New(log, repo, cfg.TokenTTL)
 	keeperSrv := keeperservice.New(log, repo)
 	grpcApp := grpcapp.New(log, grpcapp.Params{
 		AuthService:   authSrv,
 		KeeperService: keeperSrv,
-	})
+	}, cfg)
 
 	return &App{
 		GRPCSrv: grpcApp,

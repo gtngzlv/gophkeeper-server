@@ -23,16 +23,19 @@ func main() {
 	}
 
 	go func() {
-		application.GRPCSrv.MustRun(ctx)
+		application.GRPCSrv.MustRun()
 	}()
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT,
 		syscall.SIGTERM,
 		syscall.SIGQUIT,
-		syscall.SIGHUP)
+		syscall.SIGHUP,
+		syscall.SIGKILL,
+		syscall.SIGSEGV)
 	<-stop
 
+	// выяснить почему не грейсуфлли
 	application.GRPCSrv.Stop(ctx)
 	log.Info("Gracefully stopped")
 }

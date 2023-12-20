@@ -24,4 +24,6 @@ func New(logger *slog.Logger, keeperService IKeeperService) *Service {
 	}
 }
 
-func (s *Service) SaveData(ctx context.Context, data []models.KeeperData) error {}
+func (s *Service) SaveData(ctx context.Context, data []models.KeeperData) error {
+	panic("")
+}

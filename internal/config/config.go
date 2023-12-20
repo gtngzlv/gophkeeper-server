@@ -9,10 +9,10 @@ import (
 )
 
 type Config struct {
-	Env         string        `yaml:"env"  env-default:"local"`
-	StoragePath string        `yaml:"storage_path" env-required:"true"`
-	TokenTTL    time.Duration `yaml:"token_ttl" env-default:"1h"`
-	GRPC        GrpcConfig    `yaml:"grpc"`
+	Env              string        `yaml:"env"  env-default:"local"`
+	DBConnectionPath string        `yaml:"db_connection_path" env-required:"true"`
+	TokenTTL         time.Duration `yaml:"token_ttl" env-default:"1h"`
+	GRPC             GrpcConfig    `yaml:"grpc"`
 }
 
 func MustLoad() *Config {
@@ -34,7 +34,6 @@ func MustLoad() *Config {
 func fetchConfigPath() string {
 	var res string
 
-	// --config="config/config.yaml"
 	flag.StringVar(&res, "config", "", "path to config file")
 	flag.Parse()
 

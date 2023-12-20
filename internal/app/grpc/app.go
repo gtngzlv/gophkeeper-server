@@ -20,7 +20,7 @@ type App struct {
 	log        *slog.Logger
 	grpcServer *grpc.Server
 
-	config config.Config
+	config *config.Config
 }
 
 type IAuthService interface {
@@ -38,7 +38,7 @@ type Params struct {
 	KeeperService IKeeperService
 }
 
-func New(log *slog.Logger, params Params) *App {
+func New(log *slog.Logger, params Params, cfg *config.Config) *App {
 	grpcServer := grpc.NewServer()
 
 	auth.Register(grpcServer, params.AuthService)
@@ -48,39 +48,29 @@ func New(log *slog.Logger, params Params) *App {
 	return &App{
 		log:        log,
 		grpcServer: grpcServer,
+		config:     cfg,
 	}
 }
 
-func (a *App) Start(ctx context.Context) error {
-	const op = "grpcapp.Start"
+func (a *App) MustRun() {
+	if err := a.Run(); err != nil {
+		panic(err)
+	}
+}
+
+func (a *App) Run() error {
+	const op = "grpcapp.Run"
 	log := a.log.With(
 		slog.String("op", op),
 		slog.Int("port", a.config.GRPC.Port))
-	log.InfoContext(ctx, "starting gRPC server")
 
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", a.config.GRPC.Port))
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	a.listener = listener
-	return nil
-}
-
-func (a *App) MustRun(ctx context.Context) {
-	if err := a.Run(ctx); err != nil {
-		panic(err)
-	}
-}
-
-func (a *App) Run(ctx context.Context) error {
-	const op = "grpcapp.Run"
-	log := a.log.With(
-		slog.String("op", op),
-		slog.Int("port", a.config.GRPC.Port))
-	log.InfoContext(ctx, "running gRPC server", a.listener.Addr().String())
 
 	reflection.Register(a.grpcServer)
-	if err := a.grpcServer.Serve(a.listener); err != nil {
+	if err := a.grpcServer.Serve(listener); err != nil {
 		log.Error("can't start gRPC server" + err.Error())
 		return err
 	}

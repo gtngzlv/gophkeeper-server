@@ -1,5 +1,5 @@
 env: "local"
-storage_path: "./repository/gophkeeper.db"
+db_connection_path: "postgres://admin:admin@localhost:5432/gophkeeper?sslmode=disable"
 token_ttl: 1h
 grpc:
   port: 50051
