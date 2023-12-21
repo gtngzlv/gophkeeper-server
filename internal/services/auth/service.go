@@ -11,13 +11,12 @@ import (
 
 	customerr "github.com/gtngzlv/gophkeeper-server/internal/domain/errors"
 	"github.com/gtngzlv/gophkeeper-server/internal/domain/models"
-	"github.com/gtngzlv/gophkeeper-server/internal/lib/jwt"
+	"github.com/gtngzlv/gophkeeper-server/internal/lib/core"
 )
 
 type IStorageAuth interface {
 	Register(ctx context.Context, email string, passHash []byte) (userID int64, err error)
 	Login(ctx context.Context, email string) (models.User, error)
-	Logout(ctx context.Context)
 }
 
 type Service struct {
@@ -37,7 +36,7 @@ func New(logger *slog.Logger, authService IStorageAuth, tokenTTL time.Duration) 
 
 // Register creates new user in the system, if email is not exist already. Returns errors, if exists, userID if not.
 func (s *Service) Register(ctx context.Context, email string, password string) (int64, error) {
-	const op = "storageAuth.Register"
+	const op = "service.Auth.Register"
 
 	log := s.logger.With(
 		slog.String("op", op),
@@ -68,7 +67,7 @@ func (s *Service) Register(ctx context.Context, email string, password string) (
 
 // Login checks if provided credentials exists in the system and returns token, if yes. Error, if not.
 func (s *Service) Login(ctx context.Context, email string, password string) (string, error) {
-	const op = "storageAuth.Login"
+	const op = "service.Auth.Login"
 
 	log := s.logger.With(
 		slog.String("op", op),
@@ -83,25 +82,21 @@ func (s *Service) Login(ctx context.Context, email string, password string) (str
 			return "", fmt.Errorf("%s:%w", op, customerr.ErrInvalidCredentials)
 		}
 
-		s.logger.Error("failed to get user", err.Error())
+		log.Error("failed to get user", err.Error())
 		return "", fmt.Errorf("%s:%w", op, err)
 	}
 
 	if err := bcrypt.CompareHashAndPassword(user.PassHash, []byte(password)); err != nil {
-		s.logger.Info("invalid credentials", err.Error())
+		log.Info("invalid credentials", err.Error())
 		return "", fmt.Errorf("%s:%w", op, customerr.ErrInvalidCredentials)
 	}
 
 	log.Info("user logged in successfuly")
 
-	token, err := jwt.NewToken(user, s.tokenTTL)
+	token, err := core.NewToken(ctx, user, s.tokenTTL)
 	if err != nil {
-		s.logger.Error("failed to generate token", err.Error())
+		log.Error("failed to generate token", err.Error())
 		return "", fmt.Errorf("%s:%w", op, err)
 	}
 	return token, nil
-}
-
-func (s *Service) Logout(ctx context.Context) {
-
 }

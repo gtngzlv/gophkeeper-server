@@ -91,10 +91,60 @@ func (r *Postgres) Register(ctx context.Context, email string, passHash []byte) 
 	return userID, nil
 }
 
-func (r *Postgres) Logout(ctx context.Context) {
-	panic("implement me")
-}
+func (r *Postgres) SaveData(ctx context.Context, data models.PersonalData, userID int64) error {
+	var err error
+	const op = "storage.postgres.SaveData"
 
-func (r *Postgres) SaveData(ctx context.Context, data []models.KeeperData) error {
-	panic("implement me")
+	log := r.log.With(
+		slog.String("op", op),
+		slog.Int64("userID", userID))
+
+	query := "INSERT INTO PERSONAL_DATA(PDATA, USER_ID) VALUES $1, $2"
+
+	tx, err := r.db.Begin()
+	if err != nil {
+		log.Error("failed begin tx")
+		err = tx.Rollback()
+		if err != nil {
+			return fmt.Errorf("%s:%w", op, err)
+		}
+		return fmt.Errorf("%s:%w", op, err)
+	}
+
+	for _, v := range data.PData {
+		result, err := tx.ExecContext(ctx, query, v.Value, userID)
+		if err != nil {
+			log.Error("failed executing query")
+			err = tx.Rollback()
+			if err != nil {
+				return fmt.Errorf("%s:%w", op, err)
+			}
+			return fmt.Errorf("%s:%w", op, err)
+		}
+		id, err := result.LastInsertId()
+		if err != nil {
+			log.Error("failed to get last inert id")
+			err = tx.Rollback()
+			if err != nil {
+				return fmt.Errorf("%s:%w", op, err)
+			}
+			return fmt.Errorf("%s:%w", op, err)
+		}
+		if id <= 0 {
+			log.Error("last inserted id <= 0")
+			err = tx.Rollback()
+			if err != nil {
+				return fmt.Errorf("%s:%w", op, err)
+			}
+			return customerr.ErrFailedInsertData
+		}
+	}
+	err = tx.Commit()
+	if err != nil {
+		log.Error("failed to commit tx")
+		if err != nil {
+			return fmt.Errorf("%s:%w", op, err)
+		}
+	}
+	return nil
 }

@@ -1,5 +1,9 @@
 package models
 
-type KeeperData struct {
+type PersonalData struct {
+	PData []Data
+}
+
+type Data struct {
 	Value string
 }

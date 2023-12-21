@@ -26,11 +26,10 @@ type App struct {
 type IAuthService interface {
 	Register(ctx context.Context, email string, password string) (userID int64, err error)
 	Login(ctx context.Context, email string, password string) (token string, err error)
-	Logout(ctx context.Context)
 }
 
 type IKeeperService interface {
-	SaveData(ctx context.Context, data []models.KeeperData) error
+	SaveData(ctx context.Context, data models.PersonalData) error
 }
 
 type Params struct {

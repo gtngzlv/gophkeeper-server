@@ -13,3 +13,7 @@ tasks:
     cmds:
       - cd migrations && export GOOSE_DRIVER=postgres && export GOOSE_DBSTRING="user=admin dbname=gophkeeper sslmode=disable" && goose down
 
+  run-tests:
+    desc: "Run all tests"
+    cmds:
+      - go test ./tests

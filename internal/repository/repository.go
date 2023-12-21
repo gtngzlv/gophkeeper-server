@@ -14,8 +14,7 @@ import (
 type IRepository interface {
 	Login(ctx context.Context, email string) (models.User, error)
 	Register(ctx context.Context, email string, passHash []byte) (userID int64, err error)
-	Logout(ctx context.Context)
-	SaveData(ctx context.Context, data []models.KeeperData) error
+	SaveData(ctx context.Context, data models.PersonalData, userID int64) error
 }
 
 type Repository struct {

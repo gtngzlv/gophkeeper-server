@@ -16,7 +16,6 @@ import (
 type IAuthService interface {
 	Register(ctx context.Context, email string, password string) (userID int64, err error)
 	Login(ctx context.Context, email string, password string) (token string, err error)
-	Logout(ctx context.Context)
 }
 
 type serverAPI struct {
@@ -64,10 +63,6 @@ func (s *serverAPI) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginRe
 	return &pb.LoginResponse{
 		Token: token,
 	}, nil
-}
-
-func (s *serverAPI) Logout(ctx context.Context, in *pb.LogoutRequest) (*pb.LogoutResponse, error) {
-	return &pb.LogoutResponse{}, nil
 }
 
 func validateLogin(in *pb.LoginRequest) error {
