@@ -1,0 +1,19 @@
+version: "3"
+
+tasks:
+  local-up:
+    aliases:
+      - up
+    desc: "Up gophkeeper locally"
+    cmds:
+      - go run cmd/gophkeeper-server/main.go --config=./config/config.yaml
+
+  migrate-down:
+    desc: "Drops all tables"
+    cmds:
+      - cd migrations && export GOOSE_DRIVER=postgres && export GOOSE_DBSTRING="user=admin dbname=gophkeeper sslmode=disable" && goose down
+
+  run-tests:
+    desc: "Run all tests"
+    cmds:
+      - go test ./tests
