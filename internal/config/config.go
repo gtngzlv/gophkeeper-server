@@ -13,6 +13,7 @@ type Config struct {
 	DBConnectionPath string        `yaml:"db_connection_path" env-required:"true"`
 	TokenTTL         time.Duration `yaml:"token_ttl" env-default:"1h"`
 	GRPC             GrpcConfig    `yaml:"grpc"`
+	REST             RestConfig    `yaml:"rest"`
 }
 
 func MustLoad() *Config {

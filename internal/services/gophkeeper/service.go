@@ -1,4 +1,4 @@
-package authservice
+package gophkeeper
 
 import (
 	"context"
@@ -19,24 +19,26 @@ import (
 	"github.com/gtngzlv/gophkeeper-server/internal/lib/core"
 )
 
-type IStorageAuth interface {
+type IStorage interface {
 	Register(ctx context.Context, email string, passHash []byte, secretKeyHash []byte, encryptedKey []byte) (int64, error)
 	Login(ctx context.Context, email string) (models.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
+	SaveData(ctx context.Context, data models.PersonalData, userID int64) error
 }
 
 type Service struct {
-	storageAuth IStorageAuth
-	logger      *slog.Logger
-	tokenTTL    time.Duration
+	logger *slog.Logger
+
+	storage  IStorage
+	tokenTTL time.Duration
 }
 
 // New returns a new instance of the Auth service
-func New(logger *slog.Logger, authService IStorageAuth, tokenTTL time.Duration) *Service {
+func New(logger *slog.Logger, storage IStorage, tokenTTL time.Duration) *Service {
 	return &Service{
-		storageAuth: authService,
-		logger:      logger,
-		tokenTTL:    tokenTTL,
+		storage:  storage,
+		logger:   logger,
+		tokenTTL: tokenTTL,
 	}
 }
 
@@ -74,7 +76,7 @@ func (s *Service) Register(ctx context.Context, email string, password string) (
 		return 0, fmt.Errorf("%s:%w", op, err)
 	}
 
-	userID, err := s.storageAuth.Register(ctx, email, passHash, []byte(secretKeyHash), encryptedKey)
+	userID, err := s.storage.Register(ctx, email, passHash, []byte(secretKeyHash), encryptedKey)
 	if err != nil {
 		if errors.Is(err, customerr.ErrUserExists) {
 			log.Warn("user already exists", err.Error())
@@ -98,7 +100,7 @@ func (s *Service) Login(ctx context.Context, email string, password string) (str
 
 	log.Info("login")
 
-	user, err := s.storageAuth.GetUserByEmail(ctx, email)
+	user, err := s.storage.GetUserByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, customerr.ErrUserNotFound) {
 			s.logger.Warn("user not found", err.Error())
@@ -136,6 +138,25 @@ func (s *Service) Login(ctx context.Context, email string, password string) (str
 	}
 
 	return token, nil
+}
+
+func (s *Service) SaveData(ctx context.Context, data models.PersonalData) error {
+	const op = "service.Keeper.Register"
+
+	log := s.logger.With(
+		slog.String("op", op))
+
+	userID := core.GetContextUserID(ctx)
+	if userID == 0 {
+		return customerr.ErrFailedGetUserID
+	}
+
+	err := s.storage.SaveData(ctx, data, userID)
+	if err != nil {
+		log.Error("failed to save data", err.Error())
+		return err
+	}
+	return nil
 }
 
 func generateSecretKey() ([]byte, error) {

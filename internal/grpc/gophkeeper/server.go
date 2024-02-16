@@ -1,4 +1,4 @@
-package auth
+package gophkeeper
 
 import (
 	"context"
@@ -8,25 +8,26 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pb "github.com/gtngzlv/gophkeeper-protos/gen/go/gophkeeper"
-
 	customerr "github.com/gtngzlv/gophkeeper-server/internal/domain/errors"
+	"github.com/gtngzlv/gophkeeper-server/internal/domain/models"
+	"github.com/gtngzlv/gophkeeper-server/internal/proto/pb"
 )
 
-type IAuthService interface {
+type IGophkeeperService interface {
 	Register(ctx context.Context, email string, password string) (userID int64, err error)
 	Login(ctx context.Context, email string, password string) (token string, err error)
+	SaveData(ctx context.Context, data models.PersonalData) error
 }
 
 type serverAPI struct {
-	pb.UnimplementedAuthServer
+	pb.UnimplementedGophkeeperServer
 
-	authService IAuthService
+	service IGophkeeperService
 }
 
-func Register(grpcServer *grpc.Server, auth IAuthService) {
-	pb.RegisterAuthServer(grpcServer, &serverAPI{
-		authService: auth,
+func Register(grpcServer *grpc.Server, srv IGophkeeperService) {
+	pb.RegisterGophkeeperServer(grpcServer, &serverAPI{
+		service: srv,
 	})
 }
 
@@ -35,7 +36,7 @@ func (s *serverAPI) Register(ctx context.Context, in *pb.RegisterRequest) (*pb.R
 		return nil, err
 	}
 
-	userID, err := s.authService.Register(ctx, in.GetEmail(), in.GetPassword())
+	userID, err := s.service.Register(ctx, in.GetEmail(), in.GetPassword())
 	if err != nil {
 		if errors.Is(err, customerr.ErrUserExists) {
 			return nil, status.Error(codes.AlreadyExists, "user with this email already exist")
@@ -52,7 +53,7 @@ func (s *serverAPI) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginRe
 	if err := validateLogin(in); err != nil {
 		return nil, err
 	}
-	token, err := s.authService.Login(ctx, in.GetEmail(), in.GetPassword())
+	token, err := s.service.Login(ctx, in.GetEmail(), in.GetPassword())
 	if err != nil {
 		if errors.Is(err, customerr.ErrInvalidCredentials) {
 			return nil, status.Error(codes.InvalidArgument, "invalid credentials")
@@ -63,6 +64,36 @@ func (s *serverAPI) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginRe
 	return &pb.LoginResponse{
 		Token: token,
 	}, nil
+}
+
+func (s *serverAPI) SaveData(ctx context.Context, in *pb.SaveDataRequest) (*pb.SaveDataResponse, error) {
+	if len(in.Data) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+	data, err := pbDataToDomain(in)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = s.service.SaveData(ctx, data); err != nil {
+		if errors.Is(err, customerr.ErrFailedGetUserID) {
+			return nil, status.Error(codes.Unauthenticated, "not logged in")
+		}
+		return nil, status.Error(codes.Internal, "failed to save data")
+	}
+	return &pb.SaveDataResponse{}, nil
+}
+
+func pbDataToDomain(in *pb.SaveDataRequest) (models.PersonalData, error) {
+	var data []models.Data
+	for _, v := range in.GetData() {
+		if v == "" {
+			return models.PersonalData{}, status.Error(codes.InvalidArgument, "data is empty")
+		}
+		md := models.Data{Value: v}
+		data = append(data, md)
+	}
+	return models.PersonalData{PData: data}, nil
 }
 
 func validateLogin(in *pb.LoginRequest) error {

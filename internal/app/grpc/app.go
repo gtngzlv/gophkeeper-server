@@ -11,8 +11,7 @@ import (
 
 	"github.com/gtngzlv/gophkeeper-server/internal/config"
 	"github.com/gtngzlv/gophkeeper-server/internal/domain/models"
-	"github.com/gtngzlv/gophkeeper-server/internal/grpc/auth"
-	"github.com/gtngzlv/gophkeeper-server/internal/grpc/keeper"
+	"github.com/gtngzlv/gophkeeper-server/internal/grpc/gophkeeper"
 )
 
 type App struct {
@@ -23,26 +22,16 @@ type App struct {
 	config *config.Config
 }
 
-type IAuthService interface {
+type IGophkeeperService interface {
 	Register(ctx context.Context, email string, password string) (userID int64, err error)
 	Login(ctx context.Context, email string, password string) (token string, err error)
-}
-
-type IKeeperService interface {
 	SaveData(ctx context.Context, data models.PersonalData) error
 }
 
-type Params struct {
-	AuthService   IAuthService
-	KeeperService IKeeperService
-}
-
-func New(log *slog.Logger, params Params, cfg *config.Config) *App {
+func New(log *slog.Logger, srv IGophkeeperService, cfg *config.Config) *App {
 	grpcServer := grpc.NewServer()
 
-	auth.Register(grpcServer, params.AuthService)
-
-	keeper.Register(grpcServer, params.KeeperService)
+	gophkeeper.Register(grpcServer, srv)
 
 	return &App{
 		log:        log,

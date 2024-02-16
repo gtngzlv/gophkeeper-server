@@ -6,9 +6,10 @@ import (
 
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/golang-jwt/jwt/v5"
-	pb "github.com/gtngzlv/gophkeeper-protos/gen/go/gophkeeper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/gtngzlv/gophkeeper-server/internal/proto/pb"
 
 	libjwt "github.com/gtngzlv/gophkeeper-server/internal/lib/core"
 	"github.com/gtngzlv/gophkeeper-server/tests/suite"

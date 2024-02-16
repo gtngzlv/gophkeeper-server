@@ -6,9 +6,10 @@ import (
 	"strconv"
 	"testing"
 
-	pb "github.com/gtngzlv/gophkeeper-protos/gen/go/gophkeeper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	"github.com/gtngzlv/gophkeeper-server/internal/proto/pb"
 
 	"github.com/gtngzlv/gophkeeper-server/internal/config"
 )

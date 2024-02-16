@@ -7,8 +7,7 @@ import (
 	grpcapp "github.com/gtngzlv/gophkeeper-server/internal/app/grpc"
 	"github.com/gtngzlv/gophkeeper-server/internal/config"
 	"github.com/gtngzlv/gophkeeper-server/internal/repository"
-	authservice "github.com/gtngzlv/gophkeeper-server/internal/services/auth"
-	keeperservice "github.com/gtngzlv/gophkeeper-server/internal/services/keeper"
+	"github.com/gtngzlv/gophkeeper-server/internal/services/gophkeeper"
 )
 
 type App struct {
@@ -24,12 +23,8 @@ func NewApp(
 
 	repo := repository.New(ctx, log, cfg)
 
-	authSrv := authservice.New(log, repo, cfg.TokenTTL)
-	keeperSrv := keeperservice.New(log, repo)
-	grpcApp := grpcapp.New(log, grpcapp.Params{
-		AuthService:   authSrv,
-		KeeperService: keeperSrv,
-	}, cfg)
+	srv := gophkeeper.New(log, repo, cfg.TokenTTL)
+	grpcApp := grpcapp.New(log, srv, cfg)
 
 	return &App{
 		GRPCSrv: grpcApp,

@@ -2,9 +2,18 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+
+	"github.com/gtngzlv/gophkeeper-server/internal/proto/pb"
 
 	"github.com/gtngzlv/gophkeeper-server/internal/app"
 	"github.com/gtngzlv/gophkeeper-server/internal/config"
@@ -25,6 +34,7 @@ func main() {
 	go func() {
 		application.GRPCSrv.MustRun()
 	}()
+	go runRest(cfg)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT,
@@ -37,4 +47,21 @@ func main() {
 
 	application.GRPCSrv.Stop(ctx)
 	log.Info("Gracefully stopped")
+}
+
+func runRest(cfg *config.Config) {
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	mux := runtime.NewServeMux()
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	err := pb.RegisterGophkeeperHandlerFromEndpoint(ctx, mux, "localhost:"+string(cfg.GRPC.Port), opts)
+	if err != nil {
+		panic(err)
+	}
+	http.Handle("/gophkeeper.swagger.json", http.FileServer(http.Dir("../internal/proto")))
+	log.Printf("rest listening on port %v", cfg.REST.Port)
+	if err := http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", cfg.REST.Port), mux); err != nil {
+		panic(err)
+	}
 }
