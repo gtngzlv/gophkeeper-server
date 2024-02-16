@@ -13,8 +13,9 @@ import (
 
 type IRepository interface {
 	Login(ctx context.Context, email string) (models.User, error)
-	Register(ctx context.Context, email string, passHash []byte) (userID int64, err error)
+	Register(ctx context.Context, email string, passHash []byte, secretKeyHash []byte, encryptedKey []byte) (int64, error)
 	SaveData(ctx context.Context, data models.PersonalData, userID int64) error
+	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
 }
 
 type Repository struct {

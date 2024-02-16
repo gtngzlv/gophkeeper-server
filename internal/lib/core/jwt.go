@@ -14,7 +14,7 @@ const (
 	userID = "uid"
 )
 
-func NewToken(ctx context.Context, user models.User, duration time.Duration) (string, error) {
+func NewToken(ctx context.Context, user *models.User, duration time.Duration) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 
 	claims := token.Claims.(jwt.MapClaims)

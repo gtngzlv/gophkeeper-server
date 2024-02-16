@@ -71,15 +71,19 @@ func (r *Postgres) Login(ctx context.Context, email string) (models.User, error)
 	return user, nil
 }
 
-func (r *Postgres) Register(ctx context.Context, email string, passHash []byte) (int64, error) {
+func (r *Postgres) Register(ctx context.Context, email string, passHash []byte, secretKeyHash []byte, encryptedKey []byte) (int64, error) {
 	const op = "storage.postgres.Register"
 	log := r.log.With(
 		slog.String("op", op),
 		slog.String("email", email))
 	var userID int64
-	query := "INSERT INTO USERS(email, password_hash) VALUES ($1, $2) RETURNING ID"
+	query := `
+        INSERT INTO users (email, password_hash, secret_key_hash, encrypted_key)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id
+    `
 
-	res := r.db.QueryRowContext(ctx, query, email, passHash)
+	res := r.db.QueryRowContext(ctx, query, email, passHash, secretKeyHash, encryptedKey)
 	err := res.Scan(&userID)
 	if err != nil {
 		if err.(*pq.Error).Code == pgerrcode.UniqueViolation {
@@ -89,6 +93,31 @@ func (r *Postgres) Register(ctx context.Context, email string, passHash []byte) 
 	}
 	log.Info("registered new user with ID", userID)
 	return userID, nil
+}
+
+func (r *Postgres) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+	const op = "storage.postgres.GetUserByEmail"
+	log := r.log.With(
+		slog.String("op", op),
+		slog.String("email", email))
+
+	log.Info("getting user by email")
+
+	var user models.User
+	query := "SELECT id, email, password_hash, secret_key_hash, encrypted_key FROM users WHERE email = $1 LIMIT 1"
+
+	row := r.db.QueryRowContext(ctx, query, email)
+	err := row.Scan(&user.ID, &user.Email, &user.PassHash, &user.SecretKeyHash, &user.EncryptedKey)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, customerr.ErrUserNotFound
+		}
+		log.Error("failed to get user", err.Error())
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	log.Info("user found")
+	return &user, nil
 }
 
 func (r *Postgres) SaveData(ctx context.Context, data models.PersonalData, userID int64) error {

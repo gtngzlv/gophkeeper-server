@@ -1,9 +1,12 @@
 -- +goose Up
-CREATE TABLE IF NOT EXISTS USERS(
-    ID SERIAL NOT NULL PRIMARY KEY,
-    EMAIL TEXT NOT NULL UNIQUE,
-    PASSWORD_HASH BYTEA NOT NULL,
-    CREATED_AT TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL);
+CREATE TABLE IF NOT EXISTS users (
+                                     id SERIAL NOT NULL PRIMARY KEY,
+                                     email TEXT NOT NULL UNIQUE,
+                                     password_hash BYTEA NOT NULL,
+                                     secret_key_hash BYTEA NOT NULL,
+                                     encrypted_key BYTEA NOT NULL,
+                                     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+    );
 
 CREATE INDEX IF NOT EXISTS idx_email on users(email);
 

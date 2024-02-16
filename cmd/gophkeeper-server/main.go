@@ -35,7 +35,6 @@ func main() {
 		syscall.SIGSEGV)
 	<-stop
 
-	// выяснить почему не грейсуфлли
 	application.GRPCSrv.Stop(ctx)
 	log.Info("Gracefully stopped")
 }
