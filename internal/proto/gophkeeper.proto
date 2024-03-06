@@ -1,0 +1,49 @@
+syntax = "proto3";
+package pb;
+option go_package = "/pb";
+import "google/api/annotations.proto";
+
+service Gophkeeper {
+  rpc Register (RegisterRequest) returns (RegisterResponse) {
+    option (google.api.http) = {
+      post: "/register"
+      body: "*"
+    };
+  }
+  rpc Login (LoginRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+    post: "/login"
+        body: "*"
+        };
+  }
+  rpc SaveData(SaveDataRequest) returns (SaveDataResponse) {
+    option (google.api.http) = {
+      post: "/save"
+      body: "*"
+    };
+  }
+}
+
+message RegisterRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message RegisterResponse {
+  int64 user_id = 1;
+}
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string token = 1;
+}
+
+message SaveDataRequest {
+  repeated string data = 1;
+}
+
+message SaveDataResponse {}

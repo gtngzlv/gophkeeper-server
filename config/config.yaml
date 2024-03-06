@@ -1,0 +1,8 @@
+env: "local"
+db_connection_path: "postgres://admin:admin@localhost:5432/gophkeeper?sslmode=disable"
+token_ttl: 1h
+grpc:
+  port: 50052
+  timeout: 10h
+rest:
+  port: 8081
