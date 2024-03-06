@@ -211,7 +211,7 @@ func decryptSecretKey(ciphertext []byte, password []byte) ([]byte, error) {
 	}
 
 	if len(ciphertext) < gcm.NonceSize() {
-		return nil, errors.New("ciphertext too short")
+		return nil, fmt.Errorf("ciphertext too short: %w", err)
 	}
 
 	nonce := ciphertext[:gcm.NonceSize()]

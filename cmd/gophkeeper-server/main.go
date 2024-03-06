@@ -31,9 +31,7 @@ func main() {
 		panic("failed to init application" + err.Error())
 	}
 
-	go func() {
-		application.GRPCSrv.MustRun()
-	}()
+	go application.GRPCSrv.MustRun()
 	go runRest(cfg)
 
 	stop := make(chan os.Signal, 1)
@@ -59,7 +57,9 @@ func runRest(cfg *config.Config) {
 	if err != nil {
 		panic(err)
 	}
-	http.Handle("/gophkeeper.swagger.json", http.FileServer(http.Dir("../internal/proto")))
+	mux.HandlePath("GET", "/gophkeeper.swagger.json", func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
+		http.FileServer(http.Dir("internal/proto")).ServeHTTP(w, r)
+	})
 	log.Printf("rest listening on port %v", cfg.REST.Port)
 	if err := http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", cfg.REST.Port), mux); err != nil {
 		panic(err)
